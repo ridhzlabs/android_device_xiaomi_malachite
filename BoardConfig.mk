@@ -36,6 +36,12 @@ BOARD_BOOTCONFIG += \
 TARGET_BOOTLOADER_BOARD_NAME := malachite
 TARGET_NO_BOOTLOADER := true
 
+# Display: ro.sf.lcd_density, same value as the displayconfig densityMapping. The
+# mapping only sets the logical density; DisplayMetrics.DENSITY_DEVICE_STABLE (what
+# Google Play and apps use to classify the device) reads ro.sf.lcd_density and falls
+# back to 160 (mdpi) without it.
+TARGET_SCREEN_DENSITY := 490
+
 # DTB
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 

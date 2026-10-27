@@ -67,5 +67,29 @@ class XiaomiCameraContractTests(unittest.TestCase):
         self.assertIn("binder_call(hal_aidlbgservice, platform_app)", client)
 
 
+    def test_downloaded_feature_split_libraries_can_be_mapped(self):
+        # Panorama, clone, vlog... are qigsaw splits whose native libraries
+        # live in the app's own data directory (app_data_file).
+        policy = (ROOT / "sepolicy/private/platform_app.te").read_text()
+        rules = [line.strip() for line in policy.splitlines()
+                 if line.strip() and not line.lstrip().startswith("#")]
+        self.assertIn("allow platform_app app_data_file:file execute;", rules)
+        # execve() of app data stays denied, as for every other app domain.
+        self.assertFalse(any("execute_no_trans" in rule for rule in rules))
+
+    def test_camera_variant_comes_from_the_bootloader_and_board(self):
+        # The camera loads com.mi.device.<Build.DEVICE><suffix>: "_pro" (200 MP
+        # Ultra HD mode) when ro.boot.camera.config is 0, which LK sets only on
+        # the Global Redmi board; "_y" when ro.product.marketname is exactly
+        # "POCO X7". Nothing here may override the LK value, and only the POCO
+        # boards may carry the POCO market name.
+        for path in ROOT.rglob("*"):
+            if path.is_file() and path.suffix in {".prop", ".rc", ".mk", ".sh"}:
+                self.assertNotIn("camera.config", path.read_text(errors="ignore"), path)
+        poco = {p.stem: p.read_text() for p in (ROOT / "marketname").glob("*.prop")}
+        self.assertEqual(set(poco), {"S99016IA1", "S99116EA1"})
+        for text in poco.values():
+            self.assertEqual(text, "ro.product.marketname=POCO X7\n")
+
 if __name__ == "__main__":
     unittest.main()

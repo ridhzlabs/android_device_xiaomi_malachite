@@ -7,11 +7,16 @@
 
     <string name="doze_brightness_sensor_type" translatable="false">android.sensor.light</string>
 
-    <string name="proximity_sensor_type" translatable="false">android.sensor.proximity</string>
-
-        <!-- If using proximity_sensor_type, specifies a threshold value to distinguish near and
-         far break points. A sensor value less than this is considered "near". -->
-    <item name="proximity_sensor_threshold" translatable="false" format="float" type="dimen">5</item>
+    <!-- No proximity sensor for SystemUI. The only one is the Elliptic
+         ultrasound sensor: turning it on while the speaker plays makes the
+         audio HAL stop and restart the speaker amp (a ~100 ms gap) and it
+         reads "near" while the speaker plays. Keyguard falsing turned it on
+         at every wake to the lockscreen, cutting music on each unlock.
+         SensorModule maps a type no sensor has to an unloaded sensor, so
+         FalsingCollector's register() does nothing. -->
+    <string-array name="proximity_sensor_posture_mapping" translatable="false">
+        <item>none</item>
+    </string-array>
 
     <bool name="doze_proximity_check_before_pulse">false</bool>
 

@@ -8,6 +8,10 @@ import unittest
 ROOT = Path(os.environ.get("MALACHITE_DEVICE_ROOT", Path(__file__).resolve().parents[1]))
 CEILING = "/proc/sys/kernel/sched_util_clamp_min"
 MIN_FREQ_NODES = ("CPULittleClusterMinFreq", "CPUBigClusterMinFreq")
+GPU_FLOOR = "/sys/kernel/ged/hal/custom_boost_gpu_freq"
+# GED OPP indices: 35 is the lowest OPP (265 MHz, no floor), 24 is 508 MHz.
+GPU_FLOOR_NONE = "35"
+GPU_FLOOR_INTERACTION = "24"
 
 
 def table():
@@ -127,6 +131,42 @@ class PowerHintTests(unittest.TestCase):
             with self.subTest(profile=profile["Name"], check="ordering"):
                 self.assertLessEqual(profile["UclampMin_Low"], profile["UclampMin_Init"])
                 self.assertLessEqual(profile["UclampMin_Init"], profile["UclampMin_High"])
+
+    def test_interaction_raises_the_gpu_floor(self):
+        # GED targets the panel period and leaves the GPU at its lowest OPP
+        # while UI scrolls; INTERACTION holds a 508 MHz floor instead.
+        floor = [n for n in nodes().values() if n.get("Path") == GPU_FLOOR]
+        self.assertEqual(len(floor), 1)
+        floor = floor[0]
+        self.assertTrue(floor["ResetOnInit"])
+        self.assertEqual(floor["Values"][floor["DefaultIndex"]], GPU_FLOOR_NONE)
+        # libperfmgr applies the lowest-index request, so higher floors
+        # (lower OPP indices) must come first.
+        self.assertEqual(floor["Values"], sorted(floor["Values"], key=int))
+        interaction = {a["Node"]: a for a in actions("INTERACTION")}
+        self.assertEqual(interaction[floor["Name"]]["Value"], GPU_FLOOR_INTERACTION)
+
+    def test_gpu_floor_is_never_held(self):
+        # A Duration 0 request would keep the floor until the hint ends.
+        name = next(n["Name"] for n in nodes().values() if n.get("Path") == GPU_FLOOR)
+        for action in table()["Actions"]:
+            if action.get("Node") == name:
+                with self.subTest(hint=action["PowerHint"]):
+                    self.assertGreater(action["Duration"], 0)
+
+    def test_power_hal_may_write_the_gpu_floor(self):
+        te = (ROOT / "sepolicy/vendor/hal_power_default.te").read_text()
+        self.assertIn("rw_dir_file(hal_power_default, sysfs_ged)", te)
+        # MediaTek's common policy labels /sys/kernel/ged; found beside the
+        # tree in the source workspace or at device/mediatek in a ROM tree.
+        candidates = (ROOT.parent / "device_mediatek_sepolicy_vndr",
+                      ROOT.parents[1] / "mediatek" / "sepolicy_vndr")
+        policy = next((c for c in candidates if c.is_dir()), None)
+        if policy is None:
+            self.skipTest("device_mediatek_sepolicy_vndr is not checked out beside the tree")
+        genfs = (policy / "base/vendor/genfs_contexts").read_text().split()
+        self.assertIn("/kernel/ged", genfs)
+        self.assertEqual(genfs[genfs.index("/kernel/ged") + 1], "u:object_r:sysfs_ged:s0")
 
 
 if __name__ == "__main__":

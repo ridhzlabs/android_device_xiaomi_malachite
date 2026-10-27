@@ -31,9 +31,27 @@ namespace touch {
 
 namespace {
 
-// Goodix GT9916R: any value but "0" sends the 480 Hz report rate command, "0" the 240 Hz one.
+// Goodix GT9916R report rate switch (command 0xC0): any value but "0" asks for the high rate,
+// "0" for the default 240 Hz.
 constexpr char kReportRatePath[] = "/sys/devices/platform/goodix_ts.0/goodix_ts_report_rate";
 constexpr char kDispFeaturePath[] = "/dev/mi_display/disp_feature";
+
+// Xiaomi touch mode interface. Stock's 480 Hz is the game mode: the stock gt9916r driver
+// answers Touch_Game_Mode = 1 with command 0xC1 ("open 480Hz cmd in gamemode") and 0 with
+// 0xC1 0. 0xC0 alone measures about 333 Hz.
+constexpr char kTouchDevPath[] = "/dev/xiaomi-touch";
+constexpr int kTouchMagic = 't';
+constexpr int kSetCurValue = 0;
+constexpr int kTouchId = 0;
+constexpr int kTouchGameMode = 0;
+// xiaomi_touch_dev_ioctl() copies this many ints from userspace on every call.
+constexpr int kTouchBufSize = 256;
+#define TOUCH_IOC_SET_CUR_VALUE _IO(kTouchMagic, kSetCurValue)
+
+// The driver resets the IC without telling userspace: on the firmware's reset requests
+// (goodix_ts_request_handle) and in ESD recovery (goodix_ts_esd_work power-cycles it).
+// Neither restores the rate, so while the screen is on it is sent again this often.
+constexpr auto kResendInterval = 5s;
 
 bool writeReportRate(bool high) {
     if (!WriteStringToFile(high ? "1" : "0", kReportRatePath)) {
@@ -43,10 +61,31 @@ bool writeReportRate(bool high) {
     return true;
 }
 
+bool setGameMode(bool on) {
+    unique_fd fd(open(kTouchDevPath, O_RDWR | O_CLOEXEC));
+    if (fd < 0) {
+        PLOG(ERROR) << "Failed to open " << kTouchDevPath;
+        return false;
+    }
+    int buf[kTouchBufSize] = {kTouchId, kTouchGameMode, on ? 1 : 0};
+    if (ioctl(fd.get(), TOUCH_IOC_SET_CUR_VALUE, &buf) < 0) {
+        PLOG(ERROR) << "Failed to set the touch game mode";
+        return false;
+    }
+    return true;
+}
+
+// Both commands: 0xC1 gives 480 Hz; 0xC0 keeps the report rate switch in step with it.
+bool applyRate(bool high) {
+    bool reportRate = writeReportRate(high);
+    bool gameMode = setGameMode(high);
+    return reportRate || gameMode;
+}
+
 }  // anonymous namespace
 
 HighTouchPollingRate::HighTouchPollingRate() {
-    std::thread([this] { reapplyOnDisplayOn(); }).detach();
+    std::thread([this] { reapplyWhileDisplayOn(); }).detach();
 }
 
 ndk::ScopedAStatus HighTouchPollingRate::getEnabled(bool* _aidl_return) {
@@ -58,17 +97,18 @@ ndk::ScopedAStatus HighTouchPollingRate::getEnabled(bool* _aidl_return) {
 
 ndk::ScopedAStatus HighTouchPollingRate::setEnabled(bool enabled) {
     std::lock_guard<std::mutex> lock(mLock);
-    if (!writeReportRate(enabled)) {
+    if (!applyRate(enabled)) {
         return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
     }
     mEnabled = enabled;
     return ndk::ScopedAStatus::ok();
 }
 
-// The touch driver resets the IC whenever the display turns on (goodix_ts_resume_work, queued
-// on the same display power event) and does not restore the report rate, so the IC falls back
-// to 240 Hz. Listen for display power events and send the rate again once the reset is done.
-void HighTouchPollingRate::reapplyOnDisplayOn() {
+// The driver resets the IC whenever the display turns on (goodix_ts_resume_work, queued on the
+// same display power event), on firmware reset requests and in ESD recovery, and never restores
+// the rate. Send it again after each display-on and every kResendInterval while the display is
+// on. Nothing is sent while the display is off and the IC sleeps.
+void HighTouchPollingRate::reapplyWhileDisplayOn() {
     unique_fd fd(open(kDispFeaturePath, O_RDWR | O_CLOEXEC));
     if (fd < 0) {
         PLOG(ERROR) << "Failed to open " << kDispFeaturePath;
@@ -90,11 +130,24 @@ void HighTouchPollingRate::reapplyOnDisplayOn() {
             .revents = 0,
     };
     char buf[1024];
+    // The service starts while the display is on.
+    bool screenOn = true;
     while (true) {
-        if (poll(&pfd, 1, -1) < 0) {
+        int timeoutMs = screenOn ? static_cast<int>(
+                                           std::chrono::milliseconds(kResendInterval).count())
+                                 : -1;
+        int ret = poll(&pfd, 1, timeoutMs);
+        if (ret < 0) {
             if (errno == EINTR) continue;
             PLOG(ERROR) << "Failed to poll " << kDispFeaturePath;
             return;
+        }
+        if (ret == 0) {
+            std::lock_guard<std::mutex> lock(mLock);
+            if (mEnabled) {
+                applyRate(true);
+            }
+            continue;
         }
         ssize_t size = read(fd.get(), buf, sizeof(buf));
         if (size < 0) {
@@ -103,18 +156,19 @@ void HighTouchPollingRate::reapplyOnDisplayOn() {
         }
 
         // A read can return several events back to back.
-        bool displayOn = false;
+        bool powerEvent = false;
         size_t offset = 0;
         while (offset + sizeof(disp_event) <= static_cast<size_t>(size)) {
             auto* event = reinterpret_cast<disp_event_resp*>(buf + offset);
             size_t end = offset + sizeof(disp_event) + event->base.length;
             if (end > static_cast<size_t>(size)) break;
             if (event->base.type == MI_DISP_EVENT_POWER && event->base.length > 0) {
-                displayOn = event->data[0] == MI_DISP_POWER_ON;
+                powerEvent = true;
+                screenOn = event->data[0] == MI_DISP_POWER_ON;
             }
             offset = end;
         }
-        if (!displayOn) continue;
+        if (!powerEvent || !screenOn) continue;
 
         // The reset takes about 100 ms after the work runs; try once after it and once more
         // in case the first command reached the IC while it was still starting.
@@ -122,7 +176,7 @@ void HighTouchPollingRate::reapplyOnDisplayOn() {
             std::this_thread::sleep_for(delay);
             std::lock_guard<std::mutex> lock(mLock);
             if (mEnabled) {
-                writeReportRate(true);
+                applyRate(true);
             }
         }
     }

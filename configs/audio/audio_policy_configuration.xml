@@ -192,32 +192,40 @@
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
                 </devicePort>
                 <!-- LE Audio hardware offload: the audio DSP encodes and decodes LC3. Stock's
-                     ports from audio_policy_configuration_a2dp_offload_enable_cg_enable.xml. -->
-                <devicePort tagName="BLE Headset Out" type="AUDIO_DEVICE_OUT_BLE_HEADSET" role="sink">
+                     ports from audio_policy_configuration_a2dp_offload_enable_cg_enable.xml,
+                     plus encodedFormats LC3: the Bluetooth stack takes its offload codec
+                     preference from these (AudioManager.getHwOffloadFormatsSupportedForLeAudio)
+                     and offloads no configuration whose codec is not listed. -->
+                <devicePort tagName="BLE Headset Out" type="AUDIO_DEVICE_OUT_BLE_HEADSET" role="sink"
+                            encodedFormats="AUDIO_FORMAT_LC3">
                     <profile name="" format="AUDIO_FORMAT_PCM_32_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_MONO"/>
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_MONO"/>
                 </devicePort>
-                <devicePort tagName="BLE Speaker Out" type="AUDIO_DEVICE_OUT_BLE_SPEAKER" role="sink">
+                <devicePort tagName="BLE Speaker Out" type="AUDIO_DEVICE_OUT_BLE_SPEAKER" role="sink"
+                            encodedFormats="AUDIO_FORMAT_LC3">
                     <profile name="" format="AUDIO_FORMAT_PCM_32_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_MONO"/>
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_MONO"/>
                 </devicePort>
-                <devicePort tagName="BLE BlueTooth In" type="AUDIO_DEVICE_IN_BLUETOOTH_BLE" role="source">
+                <devicePort tagName="BLE BlueTooth In" type="AUDIO_DEVICE_IN_BLUETOOTH_BLE" role="source"
+                            encodedFormats="AUDIO_FORMAT_LC3">
                     <profile name="" format="AUDIO_FORMAT_PCM_32_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_IN_MONO"/>
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_IN_MONO"/>
                 </devicePort>
-                <devicePort tagName="BLE Headset In" type="AUDIO_DEVICE_IN_BLE_HEADSET" role="source">
+                <devicePort tagName="BLE Headset In" type="AUDIO_DEVICE_IN_BLE_HEADSET" role="source"
+                            encodedFormats="AUDIO_FORMAT_LC3">
                     <profile name="" format="AUDIO_FORMAT_PCM_32_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_IN_MONO"/>
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_IN_MONO"/>
                 </devicePort>
-                <devicePort tagName="BLE Broadcast" type="AUDIO_DEVICE_OUT_BLE_BROADCAST" role="sink">
+                <devicePort tagName="BLE Broadcast" type="AUDIO_DEVICE_OUT_BLE_BROADCAST" role="sink"
+                            encodedFormats="AUDIO_FORMAT_LC3">
                     <profile name="" format="AUDIO_FORMAT_PCM_32_BIT"
                              samplingRates="44100 48000" channelMasks="AUDIO_CHANNEL_OUT_MONO"/>
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"

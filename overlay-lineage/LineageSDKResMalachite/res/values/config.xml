@@ -10,4 +10,14 @@
     <!-- Whether to cleanup fingerprints upon connection to the daemon and when
          user switches -->
     <bool name="config_cleanupUnusedFingerprints">false</bool>
+
+    <!-- Check proximity before the double tap gesture (KEYCODE_WAKEUP) wakes
+         the screen, so a pocket does not wake the phone; the power key is not
+         checked. Stock HyperOS does the same with this sensor (pocket mode,
+         on by default). The only proximity sensor is the Elliptic ultrasound
+         one: it is on only until its first event, which took 160-240 ms in a
+         tester log, so the 250 ms default timeout would often wake anyway. -->
+    <bool name="config_proximityCheckOnWake">true</bool>
+    <integer name="config_proximityCheckTimeout">500</integer>
+    <bool name="config_proximityCheckOnWakeEnabledByDefault">true</bool>
 </resources>

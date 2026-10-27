@@ -3,3 +3,5 @@
 allow hal_lineage_touch_default sysfs:dir search;
 allow hal_lineage_touch_default vendor_sysfs_touch_report_rate:file rw_file_perms;
 allow hal_lineage_touch_default vendor_displayfeature_device:chr_file rw_file_perms;
+# 480 Hz is the stock driver's touch game mode, set through the Xiaomi touch device.
+allow hal_lineage_touch_default vendor_touchfeature_device:chr_file rw_file_perms;

@@ -250,6 +250,9 @@ PRODUCT_PACKAGES += \
 # frameworks/native fork builds that code only with this flag, and turns it
 # off at runtime when /proc/ged reports GED KPI disabled.
 $(call soong_config_set_bool,libgui,support_mtk_ged_kpi,true)
+# FPSGO (fpsgo.ko) learns each queue's frame rate only from libgui's
+# BufferQueue events, and passes it on to GED as the frame-time target.
+$(call soong_config_set_bool,libgui,support_mtk_fpsgo,true)
 
 PRODUCT_PACKAGES += \
     android.hardware.memtrack-service.mediatek
@@ -282,6 +285,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     android.hardware.health-service.example \
     android.hardware.health-service.example_recovery
+
+# Off-mode charging: backlight after each wake of the charging screen (charger/)
+PRODUCT_PACKAGES += \
+    vendor.charger_backlight.malachite
 
 # HotwordEnrollement
 PRODUCT_COPY_FILES += \
@@ -337,6 +344,13 @@ PRODUCT_PACKAGES += \
 # Media
 PRODUCT_PACKAGES += \
     android.hardware.media.c2-mtk-service
+
+# Media (Dolby): stock's Dolby Codec2 stores over AIDL, with the shims their
+# decoders need on this platform.
+PRODUCT_PACKAGES += \
+    android.hardware.media.c2-dolby-service \
+    libcodec2_hidl_shim \
+    libcodec2_shim
 
 PRODUCT_COPY_FILES += \
     $(call find-copy-subdir-files,*,$(DEVICE_PATH)/configs/media,$(TARGET_COPY_OUT_VENDOR)/etc)
@@ -440,7 +454,7 @@ include $(DEVICE_PATH)/vendor_logtag.mk
 
 # Radio
 PRODUCT_PACKAGES += \
-    vendor_mdota_symlink
+    mdota_symlink
 
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.telephony.gsm.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.telephony.gsm.xml \
@@ -486,6 +500,13 @@ PRODUCT_PACKAGES += \
     android.hardware.usb-service.mediatek \
     android.hardware.usb.gadget-service.mediatek
 
+# Our stock-derived init.mt6878.usb.rc (init/), not hardware/mediatek's common one.
+$(call soong_config_set_bool,mediatek_gadget,use_custom_usb_gadget_rc,true)
+
+# Xiaomi's wlan_assistant (vendor blob) loads the region's Wi-Fi NVRAM by board id;
+# hardware/mediatek's own one doesn't.
+$(call soong_config_set_bool,mediatek_wlan,use_vendor_wlan_assistant,true)
+
 PRODUCT_PACKAGES += \
     init.mt6878.usb.rc
 
@@ -510,6 +531,11 @@ PRODUCT_COPY_FILES += \
 # RSN/SAE path without changing authentication or protected management frames.
 $(call soong_config_set_bool,wpa_supplicant_8,wifi_disable_wpa_version_3,true)
 
+# libwifi-hal-mtk.so fills the function table in its pre-Android 14 QPR2 layout.
+# Without this the wrapper copies it with the newer layout and every call after
+# the RTT entries lands on the wrong vendor function.
+$(call soong_config_set_bool,mediatek_wifi_hal,use_pre_u_qpr2_struct,true)
+
 PRODUCT_PACKAGES += \
     android.hardware.wifi-service \
     hostapd \
@@ -523,6 +549,11 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.passpoint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.passpoint.xml \
     frameworks/native/data/etc/android.hardware.wifi.rtt.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.rtt.xml \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
+
+# MediaTek AEE backtrace helper: LineageOS's stub from hardware/mediatek/libaedv instead
+# of stock's libladder, which keeps dumping backtraces with no AEE to receive them.
+PRODUCT_PACKAGES += \
+    libladder
 
 # Inherit the proprietary files
 $(call inherit-product, vendor/xiaomi/malachite/malachite-vendor.mk)

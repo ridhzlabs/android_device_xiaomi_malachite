@@ -65,16 +65,15 @@ ro.bluetooth.a2dp_offload.supported=true
 persist.bluetooth.a2dp_offload.cap=sbc-aac
 persist.bluetooth.a2dp_offload.disabled=false
 
-# LE Audio hardware offload: the audio DSP encodes and decodes LC3, through
-# the LE Audio ports of the primary module (stock's MediaTek offload ports;
-# stock itself leaves this off). The Bluetooth stack needs disabled=false set
-# explicitly (codec_manager.cc defaults it to true). Developer options "Disable
-# LE audio hardware offload", or disabling A2DP offload, sets
-# persist.bluetooth.leaudio_offload.disabled=true; after a reboot the stack
-# encodes LC3 in software and audio policy reads
-# audio_policy_configuration_le_offload_disabled.xml (or the A2DP one).
+# LE Audio: software LC3 by default, as stock. With hardware offload (the audio
+# DSP through the primary module's LE Audio ports, which stock never enables)
+# LE Audio connected but the sound stayed on the phone's speaker (tester,
+# 20261016-5); with "Disable LE audio hardware offload" it played on the
+# earbuds. disabled=true makes the stack encode LC3 in software and audio policy
+# read audio_policy_configuration_le_offload_disabled.xml. supported=true keeps
+# the Developer options switch, so offload can still be tried.
 ro.bluetooth.leaudio_offload.supported=true
-persist.bluetooth.leaudio_offload.disabled=false
+persist.bluetooth.leaudio_offload.disabled=true
 
 # LE Audio (unicast). Stock switches every profile off. Earbuds that also speak
 # classic Bluetooth stay on A2DP and HFP until LE Audio is switched on in their
@@ -286,12 +285,17 @@ ro.lmk.kill_heaviest_task=true
 ro.lmk.kill_timeout_ms=50
 ro.lmk.filecache_min_kb=153600
 ro.lmk.stall_limit_critical=40
-ro.lmk.swap_free_low_percentage=100
+# Swap counts as low below 10% free, lmkd's default and Pixel's. At 100 swap
+# was always "low" (one swapped page, or easily available memory below the
+# zram size, was enough), so a low-watermark breach could kill down to
+# perceptible+1 (previous app, home, services) instead of cached apps only,
+# and page-cache thrashing killed even with free memory above the watermarks.
+ro.lmk.swap_free_low_percentage=10
 
 # Media
-media.c2.hal.selection=aidl
+media.c2.hal.selection=hidl
 debug.stagefright.c2inputsurface=-1
-media.c2.dmabuf.padding=512
+media.c2.dmabuf.padding=3072
 media.stagefright.thumbnail.prefer_hw_codecs=true
 ro.vendor.mtk.c2.vdec.fmt.support.level=2
 ro.vendor.mtk.c2.vdec.vpp.turnkey.memc=1
@@ -357,6 +361,17 @@ telephony.lteOnCdmaDevice=1
 # Seamless transfer
 sys.fflag.override.settings_seamless_transfer=true
 
+# Backlight through MediaTek's composer, as stock: SurfaceFlinger then gets the SDR and the
+# display level separately and dims SDR content while HDR content is shown brighter. The
+# composer writes 1 + 20478 * the framework's backlight float to lcd-backlight, which the
+# panel takes as its level; configs/display_id_*.xml maps those levels to stock's nits.
+ro.vendor.mtk_backlight_hwc_support=1
+# The composer runs in MediaTek's sync backlight mode (platform switch bit 15, DTB led_mode
+# 4): it holds each level back and writes it to lcd-backlight only after the frame that
+# goes with it has been committed, so the backlight cannot change before the dimmed or
+# brightened content. init keeps led_type at 0 (see init.mt6878.rc), so the kernel still
+# applies that write; with led_type 1 the prebuilt mediatek-drm drops it.
+
 # Surface Flinger
 debug.sf.auto_latch_unsignaled=1
 debug.sf.disable_client_composition_cache=0
@@ -375,13 +390,20 @@ debug.sf.earlyGl.app.duration=14600000
 ro.surface_flinger.clear_slots_with_set_layer_buffer=false
 ro.surface_flinger.enable_frame_rate_override=false
 ro.surface_flinger.ignore_hdr_camera_layers=true
-ro.surface_flinger.use_content_detection_for_refresh_rate=true
+# Refresh rate as stock: no content detection and an 1100 ms idle timer
+# (stock: debug.sf.set_idle_timer_ms=1100). With 80 ms and content detection the
+# panel switched modes many times a second, and every switch on this panel can
+# show as a flicker.
+ro.surface_flinger.use_content_detection_for_refresh_rate=false
 ro.surface_flinger.max_frame_buffer_acquired_buffers=3
 ro.surface_flinger.set_display_power_timer_ms=1000
-ro.surface_flinger.set_idle_timer_ms=80
+ro.surface_flinger.set_idle_timer_ms=1100
 ro.surface_flinger.set_touch_timer_ms=150
 ro.surface_flinger.supports_background_blur=1
 ro.surface_flinger.has_HDR_display=true
+# The composer does not report Dolby Vision; the Dolby decoders (dolby/codec2)
+# render it, so SurfaceFlinger adds it to the internal display.
+ro.surface_flinger.has_dolby_vision=true
 ro.surface_flinger.has_wide_color_display=true
 ro.surface_flinger.protected_contents=true
 ro.surface_flinger.use_color_management=true

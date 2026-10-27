@@ -22,7 +22,7 @@ class HighTouchPollingRate : public BnHighTouchPollingRate {
     ndk::ScopedAStatus setEnabled(bool enabled) override;
 
   private:
-    void reapplyOnDisplayOn();
+    void reapplyWhileDisplayOn();
 
     std::mutex mLock;
     bool mEnabled = false;
