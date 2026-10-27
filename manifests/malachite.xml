@@ -4,8 +4,8 @@
      the malachite-project forks. Copy to .repo/local_manifests/malachite.xml after
      `repo init -u https://github.com/LineageOS/android.git -b lineage-23.2`.
 
-     Every project uses its fork's lineage-23.2 branch, the only branch
-     in each fork. These carry changes on top of their source:
+     Every project uses its fork's lineage-23.2 branch (lineage-24.0 is the
+     Android 17 test line). These carry changes on top of their source:
        device tree         chara's release + unmerged charger/module-loader
                            fixes + WPA3 nl80211 version opt-in + the
                            September 2026 audit, power, display and
@@ -26,13 +26,15 @@
                            and radio-property rules
        vendor              chara + Aperture kept beside MiuiCamera
                            (QR scanner)
-       Bluetooth           current LineageOS + LineageOS change 507009 (MTK
-                           A2DP offload coex wrap-around fix), approved but
-                           not merged on 2026-10-09. Once it is merged in
-                           lineage-23.2, drop this override and sync
-                           LineageOS's project again
-     malachite-kernel, hardware/xiaomi and vendor/mediatek/ims are
-     chara's release state, unmodified.
+       Bluetooth           current LineageOS (which now includes change
+                           507009, the MTK A2DP offload coex fix this fork
+                           first carried) + LE Audio fixes: codec configs
+                           kept in step, pending Audio HAL check, CIG retry
+                           with a symmetric PHY
+       hardware/xiaomi     chara's release + fingerprint ignore-touches and
+                           display state passed to UdfpsHandler
+     malachite-kernel and vendor/mediatek/ims are chara's release state,
+     unmodified.
      ParanoidSense (face unlock app) is PixelOS's sixteen-qpr2, unmodified,
      under the name lineage-23.2.
      hardware/dolby is crDroid's LunarisDolby branch reduced to its Dolby
