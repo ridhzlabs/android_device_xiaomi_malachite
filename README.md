@@ -6,11 +6,14 @@ Device tree for an unofficial LineageOS 23.2 (Android 16) build for malachite.
 
 ## Branch
 
-`lineage-23.2` is the only branch, in this repository and in every other
+`lineage-23.2` is the stable branch, in this repository and in every other
 [malachite-project](https://github.com/malachite-project) fork. To base work on
-these trees, use `lineage-23.2`.
+these trees, use `lineage-23.2`. `lineage-24.0` is the Android 17 test line.
 
 ## Building
+
+See [BUILDING.md](BUILDING.md) for building ROMs from these trees (forking, staying in
+sync, source ID) and [AGENTS.md](AGENTS.md) for the working rules.
 
 `manifests/malachite.xml` is the local manifest for the whole tree: set up a
 LineageOS 23.2 checkout, copy it to `.repo/local_manifests/`, sync, then
