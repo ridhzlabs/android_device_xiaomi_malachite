@@ -59,7 +59,8 @@ Vendor blobs, kernel, hardware and sepolicy trees are the
 [malachite-project](https://github.com/malachite-project) forks. The last
 `lineage-23.2` snapshots are kept at [FMIUI](https://github.com/FMIUI),
 [cmdr-chara](https://github.com/cmdr-chara) and
-[nanerb25](https://github.com/nanerb25).
+[nanerb25](https://github.com/nanerb25). `hardware/mediatek` is FMIUI's tree
+plus the upstream `mdota` symlink module the device tree lists.
 
 ROM: [Lunaris AOSP](https://github.com/Lunaris-AOSP).
 
