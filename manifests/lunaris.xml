@@ -6,11 +6,11 @@
        repo init -u https://github.com/Lunaris-AOSP/android -b 16.2 --git-lfs
 
      Lunaris provides its own frameworks/base, frameworks/native,
-     packages/apps/Settings, packages/services/Telephony,
-     packages/modules/Bluetooth and external/wpa_supplicant_8, so those
-     projects are not overridden here. The malachite changes on top of
-     LineageOS for them are cherry-picked onto the Lunaris forks with
-     tools/apply-malachite-patches.sh.
+     packages/apps/Settings and packages/services/Telephony; the malachite
+     changes on top of LineageOS for them are cherry-picked onto these forks
+     with tools/apply-malachite-patches.sh. packages/modules/Bluetooth is
+     left to Lunaris as well; the MediaTek A2DP offload fix it needs is
+     already in the LineageOS branch it tracks.
 
      The remaining projects are the last malachite-project lineage-23.2
      state, kept at FMIUI (vendor, kernel, hardware/mediatek, sepolicy,
@@ -49,6 +49,20 @@
   <remove-project path="vendor/mediatek/ims" optional="true" />
   <project path="vendor/mediatek/ims" name="android_vendor_mediatek_ims"
            remote="malachite-chara" revision="lineage-23.2" />
+
+  <!-- Lunaris projects patched for malachite -->
+  <remove-project path="frameworks/base" optional="true" />
+  <project path="frameworks/base" name="frameworks_base" remote="ridhzlabs"
+           revision="lunaris-16.2" groups="pdk-cw-fs,pdk-fs,sysui-studio" />
+  <remove-project path="frameworks/native" optional="true" />
+  <project path="frameworks/native" name="frameworks_native" remote="ridhzlabs"
+           revision="lunaris-16.2" groups="pdk" />
+  <remove-project path="packages/apps/Settings" optional="true" />
+  <project path="packages/apps/Settings" name="packages_apps_Settings" remote="ridhzlabs"
+           revision="lunaris-16.2" groups="pdk-fs,pdk-cw-tvc,sysui-studio" />
+  <remove-project path="packages/services/Telephony" optional="true" />
+  <project path="packages/services/Telephony" name="packages_services_Telephony" remote="ridhzlabs"
+           revision="lunaris-16.2" groups="pdk-cw-fs,pdk-fs" />
 
   <!-- Overrides of LineageOS projects -->
   <remove-project path="external/wpa_supplicant_8" optional="true" />
