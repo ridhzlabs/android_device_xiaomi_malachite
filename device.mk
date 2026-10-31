@@ -191,12 +191,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     init.euicc.rc
 
-# Face unlock (ParanoidSense, front camera). frameworks/base registers its
+# Face unlock (Lunaris FaceUnlock, front camera). frameworks/base registers its
 # SenseProvider only when ro.face.sense_service is true. It registers as
 # STRENGTH_WEAK, so it can never release keystore-bound keys.
-PRODUCT_PACKAGES += \
-    ParanoidSense
-
+# The app itself is added by vendor/lineage/config/lunaris.mk.
 PRODUCT_SYSTEM_EXT_PROPERTIES += \
     ro.face.sense_service=true
 

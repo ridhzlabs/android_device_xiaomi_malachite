@@ -16,15 +16,13 @@
      The remaining projects are the last malachite-project lineage-23.2
      state, kept at FMIUI (vendor, kernel, hardware/mediatek, sepolicy,
      dolby), cmdr-chara (vendor/mediatek/ims, wpa_supplicant_8) and
-     nanerb25 (hardware/xiaomi). ParanoidSense is PixelOS' unmodified
-     sixteen-qpr2 app, as in the malachite-project manifest.
+     nanerb25 (hardware/xiaomi).
 -->
 <manifest>
   <remote name="ridhzlabs" fetch="https://github.com/ridhzlabs/" />
   <remote name="malachite-fmiui" fetch="https://github.com/FMIUI/" />
   <remote name="malachite-chara" fetch="https://github.com/cmdr-chara/" />
   <remote name="malachite-nanerb" fetch="https://github.com/nanerb25/" />
-  <remote name="pixelos" fetch="https://github.com/PixelOS-AOSP/" />
 
   <!-- Device -->
   <remove-project path="device/xiaomi/malachite" optional="true" />
@@ -71,8 +69,6 @@
            remote="malachite-chara" revision="lineage-23.2" />
 
   <!-- Additions -->
-  <project path="packages/apps/ParanoidSense" name="android_packages_apps_ParanoidSense"
-           remote="pixelos" revision="sixteen-qpr2" />
   <project path="hardware/dolby" name="android_hardware_dolby"
            remote="malachite-fmiui" revision="lineage-23.2" />
 </manifest>
