@@ -3,7 +3,8 @@
      Local manifest for Lunaris AOSP 16.2 on malachite. Copy to
      .repo/local_manifests/lunaris.xml after
 
-       repo init -u https://github.com/Lunaris-AOSP/android -b 16.2 --git-lfs
+       repo init -u https://github.com/Lunaris-AOSP/android -b 16.2
+     with git-lfs enabled
 
      Lunaris provides its own frameworks/base, frameworks/native,
      packages/apps/Settings and packages/services/Telephony; the malachite
