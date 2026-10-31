@@ -14,9 +14,10 @@
      already in the LineageOS branch it tracks.
 
      The remaining projects are the last malachite-project lineage-23.2
-     state, kept at FMIUI (vendor, kernel, hardware/mediatek, sepolicy,
-     dolby), cmdr-chara (vendor/mediatek/ims, wpa_supplicant_8) and
-     nanerb25 (hardware/xiaomi).
+     state, kept at FMIUI (vendor, kernel, sepolicy, dolby), cmdr-chara
+     (vendor/mediatek/ims, wpa_supplicant_8) and nanerb25
+     (hardware/xiaomi). hardware/mediatek is FMIUI's tree plus the
+     upstream mdota symlink module that the device tree lists.
 -->
 <manifest>
   <remote name="ridhzlabs" fetch="https://github.com/ridhzlabs/" />
@@ -38,7 +39,7 @@
   <!-- Platform -->
   <remove-project path="hardware/mediatek" optional="true" />
   <project path="hardware/mediatek" name="android_hardware_mediatek"
-           remote="malachite-fmiui" revision="lineage-23.2" />
+           remote="ridhzlabs" revision="lineage-23.2" />
   <remove-project path="hardware/xiaomi" optional="true" />
   <project path="hardware/xiaomi" name="android_hardware_xiaomi"
            remote="malachite-nanerb" revision="lineage-23.2" />
